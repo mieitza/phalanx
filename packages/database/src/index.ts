@@ -26,7 +26,7 @@ export function createDatabase(config: DatabaseConfig = {}) {
 
   // Create SQLite connection
   const sqlite = new Database(url, {
-    readonly: config.readonly,
+    ...(typeof config.readonly === 'boolean' && { readonly: config.readonly }),
     fileMustExist: false,
     verbose: config.verbose ? (msg: string) => logger.debug(msg) : undefined,
   });
