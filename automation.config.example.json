@@ -1,0 +1,63 @@
+{
+  "$schema": "./schemas/config.schema.json",
+  "providers": {
+    "default": "ollama/llama3.1:8b",
+    "aliases": {
+      "fast": "ollama/llama3.1:8b",
+      "cheap": "ollama/llama3.1:8b",
+      "powerful": "anthropic/claude-3.5",
+      "local": "ollama/llama3.1:8b"
+    },
+    "keys": {
+      "anthropic": "env:ANTHROPIC_API_KEY",
+      "openai": "env:OPENAI_API_KEY"
+    }
+  },
+  "routing": {
+    "strategy": "cost-aware",
+    "rules": [
+      {
+        "if": { "tokens": "< 2000" },
+        "use": "fast"
+      },
+      {
+        "if": { "tool": "codegen" },
+        "use": "powerful"
+      },
+      {
+        "fallback": ["fast", "cheap", "local"]
+      }
+    ]
+  },
+  "sandbox": {
+    "executor": "oci",
+    "limits": {
+      "cpu": 1,
+      "mem": "1Gi",
+      "timeoutSec": 120
+    },
+    "netEgress": [
+      "github.com:443",
+      "api.openai.com:443"
+    ]
+  },
+  "tools": {
+    "allowlist": ["*"],
+    "blocklist": [],
+    "autoApprove": false
+  },
+  "workflow": {
+    "maxTurns": 20,
+    "timeout": 3600,
+    "retry": {
+      "maxAttempts": 3,
+      "backoffMultiplier": 2.0,
+      "initialDelay": 1000,
+      "maxDelay": 30000
+    }
+  },
+  "ui": {
+    "theme": "default-dark",
+    "vimMode": false
+  }
+}
