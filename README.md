@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# phalanx
-=======
 # Phalanx - Self-Hosted LLM Automation Platform
 
 > An open-source, enterprise-ready automation platform that empowers developers to build and execute complex AI-driven workflows using self-hosted LLMs, with extensive tool execution capabilities including shell commands and Model Context Protocol (MCP) servers.
@@ -13,6 +10,7 @@
 - 🔌 **MCP Integration**: Full Model Context Protocol support for extensible tool ecosystems
 - 🎯 **Agent Orchestration**: Complex agent-to-agent communication and task delegation
 - 🔒 **Enterprise Security**: Policy-based execution control, sandboxing, and audit trails
+- 💾 **Zero External Dependencies**: SQLite database - no PostgreSQL required!
 
 ## 🏗️ Architecture
 
@@ -29,8 +27,17 @@
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Core Services:                                              │
-│  • LLM Gateway        • Tool Runner                         │
-│  • Workflow Engine    • MCP Client Manager                  │
+│  • LLM Gateway (OpenAI, Anthropic, Ollama)                 │
+│  • Tool Runner (Shell + Docker Sandbox)                     │
+│  • Workflow Engine (Coming Soon)                            │
+│  • MCP Manager (Coming Soon)                                │
+└─────────────────────────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│ Data Layer:                                                 │
+│  • SQLite (single file - ./data/phalanx.db)                │
+│  • Optional Redis (caching)                                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -39,22 +46,23 @@
 ```
 phalanx/
 ├── apps/
-│   ├── api-gateway/       # API Gateway with OIDC/RBAC
-│   ├── llm-gateway/       # LLM provider abstraction
-│   ├── workflow-engine/   # DAG workflow orchestration
-│   ├── tool-runner/       # Tool execution with sandboxing
-│   ├── mcp-manager/       # MCP server lifecycle management
-│   ├── web/               # Web UI (Next.js)
-│   └── cli/               # CLI/TUI interface
+│   ├── api-gateway/       # ✅ API Gateway with OIDC/RBAC
+│   ├── llm-gateway/       # ✅ LLM provider abstraction
+│   ├── tool-runner/       # ✅ Tool execution with sandboxing
+│   ├── workflow-engine/   # 🚧 DAG workflow orchestration
+│   ├── mcp-manager/       # 🚧 MCP server lifecycle management
+│   ├── web/               # 🚧 Web UI (Next.js)
+│   └── cli/               # 🚧 CLI/TUI interface
 ├── packages/
-│   ├── shared/            # Shared utilities (logger, errors)
-│   ├── schemas/           # Zod schemas and types
-│   ├── sdk-js/            # TypeScript SDK
-│   └── sdk-py/            # Python SDK
+│   ├── shared/            # ✅ Shared utilities (logger, errors)
+│   ├── schemas/           # ✅ Zod schemas and types
+│   ├── database/          # ✅ Drizzle ORM + SQLite
+│   ├── sdk-js/            # 🚧 TypeScript SDK
+│   └── sdk-py/            # 🚧 Python SDK
 ├── infra/
 │   ├── compose/           # Docker Compose for local dev
-│   ├── helm/              # Kubernetes Helm charts
-│   └── migrations/        # Database migrations
+│   └── helm/              # Kubernetes Helm charts
+├── data/                  # SQLite database (gitignored)
 ├── examples/              # Example workflows and tools
 └── e2e/                   # End-to-end tests
 ```
@@ -63,10 +71,11 @@ phalanx/
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm 8+
-- Docker & Docker Compose
-- PostgreSQL 16+ (for production)
+- **Node.js 20+**
+- **pnpm 8+**
+- **Docker** (optional - only for sandboxed execution and observability tools)
+
+**That's it!** No PostgreSQL, no complex database setup. Just install and run!
 
 ### Local Development Setup
 
@@ -83,31 +92,42 @@ cd phalanx
 pnpm install
 ```
 
-3. **Start local infrastructure**
+3. **Generate and run database migrations**
+
+```bash
+# Generate migration files
+pnpm --filter @phalanx/database db:generate
+
+# Run migrations
+pnpm --filter @phalanx/database db:migrate
+```
+
+4. **(Optional) Start infrastructure services**
+
+Only needed for observability and optional Redis caching:
 
 ```bash
 docker compose -f infra/compose/dev.yml up -d
 ```
 
 This starts:
-- PostgreSQL (port 5432)
-- Redis (port 6379)
-- MinIO (port 9000, console 9001)
-- Jaeger (UI port 16686)
-- Ollama (port 11434)
-- Prometheus (port 9090)
-- Grafana (port 3000, admin/admin)
-
-4. **Run database migrations**
-
-```bash
-pnpm run migrate
-```
+- Redis (port 6379) - Optional caching
+- MinIO (port 9000, console 9001) - Object storage
+- Jaeger (UI port 16686) - Distributed tracing
+- Ollama (port 11434) - Local LLM runtime
+- Prometheus (port 9090) - Metrics
+- Grafana (port 3000, admin/admin) - Dashboards
 
 5. **Start development servers**
 
 ```bash
+# Start all services
 pnpm run dev
+
+# Or start individual services
+pnpm --filter @phalanx/api-gateway dev    # Port 3001
+pnpm --filter @phalanx/llm-gateway dev    # Port 3002
+pnpm --filter @phalanx/tool-runner dev    # Port 3003
 ```
 
 6. **Pull a local LLM model (optional)**
@@ -118,35 +138,98 @@ docker exec -it phalanx-ollama ollama pull llama3.1:8b
 
 ### Configuration
 
-Create a configuration file at `~/.config/llm-automation/config.json`:
+Create `.env` from the example:
 
-```json
-{
-  "providers": {
-    "default": "ollama/llama3.1:8b",
-    "aliases": {
-      "fast": "ollama/llama3.1:8b",
-      "powerful": "anthropic/claude-3.5"
-    }
-  },
-  "sandbox": {
-    "executor": "oci",
-    "limits": {
-      "cpu": 1,
-      "mem": "1Gi",
-      "timeoutSec": 120
-    }
-  }
-}
+```bash
+cp .env.example .env
 ```
 
-## 📖 Documentation
+Key settings:
 
-- [Architecture Guide](./docs/architecture.md)
-- [API Reference](./docs/api.md)
-- [Configuration](./docs/configuration.md)
-- [Security Model](./docs/security.md)
-- [Development Guide](./docs/development.md)
+```env
+# Database (SQLite - single file, no server!)
+DATABASE_URL=./data/phalanx.db
+
+# LLM Providers
+OPENAI_API_KEY=sk-...         # Optional
+ANTHROPIC_API_KEY=sk-ant-...  # Optional
+OLLAMA_BASE_URL=http://localhost:11434  # Local models
+
+# Sandbox
+SANDBOX_EXECUTOR=docker       # or "shell" for no isolation
+```
+
+## 💾 Database: Why SQLite?
+
+We chose **SQLite + Drizzle ORM** for ultimate simplicity:
+
+✅ **Zero Setup** - No external database server required
+✅ **Single File** - `./data/phalanx.db` - Easy backups
+✅ **Fast** - Often faster than PostgreSQL for single-machine workloads
+✅ **ACID Compliant** - Full transactional support
+✅ **Production Ready** - Used by millions of applications
+✅ **Easy Migration** - Can upgrade to PostgreSQL when needed
+
+Perfect for the self-hosted philosophy!
+
+### Database Operations
+
+```bash
+# Generate migrations after schema changes
+pnpm --filter @phalanx/database db:generate
+
+# Run migrations
+pnpm --filter @phalanx/database db:migrate
+
+# Open Drizzle Studio (visual DB explorer)
+pnpm --filter @phalanx/database db:studio
+
+# Push schema directly (dev only)
+pnpm --filter @phalanx/database db:push
+```
+
+## 📖 API Documentation
+
+### LLM Gateway (Port 3002)
+
+```bash
+# Non-streaming completion
+curl -X POST http://localhost:3002/api/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "ollama/llama3.1:8b",
+    "messages": [{"role": "user", "content": "Hello!"}]
+  }'
+
+# Streaming completion (SSE)
+curl -X POST http://localhost:3002/api/v1/stream \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-3-5-sonnet-20241022",
+    "messages": [{"role": "user", "content": "Count to 10"}]
+  }'
+
+# List available models
+curl http://localhost:3002/api/v1/models
+```
+
+### Tool Runner (Port 3003)
+
+```bash
+# Execute shell command
+curl -X POST http://localhost:3003/api/v1/exec \
+  -H "Content-Type: application/json" \
+  -d '{
+    "tool": "shell",
+    "args": {"cmd": "echo Hello World"}
+  }'
+
+# Stream execution output
+curl http://localhost:3003/api/v1/exec/{execId}/stream
+
+# List policy rules
+curl http://localhost:3003/api/v1/policy/rules
+```
 
 ## 🧪 Testing
 
@@ -177,18 +260,6 @@ pnpm run build
 pnpm --filter @phalanx/api-gateway build
 ```
 
-## 🐳 Docker
-
-Build and run with Docker:
-
-```bash
-# Build all services
-docker compose build
-
-# Run production stack
-docker compose up -d
-```
-
 ## 📊 Monitoring
 
 Access the following UIs when running locally:
@@ -197,6 +268,7 @@ Access the following UIs when running locally:
 - **Jaeger**: http://localhost:16686
 - **Prometheus**: http://localhost:9090
 - **MinIO Console**: http://localhost:9001 (phalanx/phalanx123)
+- **Drizzle Studio**: Run `pnpm --filter @phalanx/database db:studio`
 
 ## 🤝 Contributing
 
@@ -214,21 +286,24 @@ We welcome contributions! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for de
 
 ## 📋 Roadmap
 
-### M1: Foundation (Weeks 1-4) - Current
+### M1: Foundation (Weeks 1-4) - ✅ 95% Complete
 
 - [x] Monorepo scaffolding
-- [x] Shared packages (schemas, utilities)
-- [ ] API Gateway with OIDC/RBAC
-- [ ] LLM Gateway (OpenAI, Anthropic, Ollama)
-- [ ] Tool Runner with shell execution
+- [x] Shared packages (schemas, utilities, database)
+- [x] API Gateway with OIDC/RBAC
+- [x] LLM Gateway (OpenAI, Anthropic, Ollama)
+- [x] Tool Runner with shell + Docker execution
+- [x] SQLite + Drizzle ORM data persistence
+- [x] Policy engine for secure execution
 - [ ] Basic workflow engine
 
-### M2: Tooling & MCP (Weeks 5-8)
+### M2: Workflow & MCP (Weeks 5-8)
 
+- [ ] Workflow engine with DAG execution
 - [ ] MCP client manager
-- [ ] Policy engine for tool execution
 - [ ] Multi-turn workflow support
 - [ ] CLI/TUI interface
+- [ ] Human-in-the-loop approvals
 
 ### M3: Enterprise (Weeks 9-12)
 
@@ -255,4 +330,3 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](./LICE
 ---
 
 Made with ❤️ by the Phalanx team
->>>>>>> 61ba0f0 (feat: initial project scaffolding for Phalanx platform)
