@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3';
-import { drizzle } from 'drizzle-orm/better-sqlite3';
+import { drizzle, BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 import { createLogger } from '@phalanx/shared';
 import { mkdir } from 'fs/promises';
@@ -13,7 +13,12 @@ export interface DatabaseConfig {
   verbose?: boolean;
 }
 
-export function createDatabase(config: DatabaseConfig = {}) {
+export interface DatabaseInstance {
+  db: BetterSQLite3Database<typeof schema>;
+  sqlite: Database.Database;
+}
+
+export function createDatabase(config: DatabaseConfig = {}): DatabaseInstance {
   const url = config.url || process.env.DATABASE_URL || './data/phalanx.db';
 
   logger.info({ url, readonly: config.readonly }, 'Initializing database connection');
@@ -28,7 +33,7 @@ export function createDatabase(config: DatabaseConfig = {}) {
   const sqlite = new Database(url, {
     ...(typeof config.readonly === 'boolean' && { readonly: config.readonly }),
     fileMustExist: false,
-    verbose: config.verbose ? (msg: string) => logger.debug(msg) : undefined,
+    verbose: config.verbose ? (message?: unknown, ...additionalArgs: unknown[]) => logger.debug({ message, additionalArgs }) : undefined,
   });
 
   // Enable WAL mode for better concurrency
