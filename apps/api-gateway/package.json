@@ -24,6 +24,8 @@
     "@opentelemetry/sdk-node": "^0.45.1",
     "@opentelemetry/auto-instrumentations-node": "^0.39.4",
     "@opentelemetry/exporter-trace-otlp-http": "^0.45.1",
+    "@opentelemetry/resources": "^1.18.1",
+    "@opentelemetry/semantic-conventions": "^1.18.1",
     "@phalanx/schemas": "workspace:*",
     "@phalanx/shared": "workspace:*",
     "fastify": "^4.25.2",

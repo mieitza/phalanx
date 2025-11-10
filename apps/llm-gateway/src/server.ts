@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import fastifyCors from '@fastify/cors';
 import fastifySensible from '@fastify/sensible';
+import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { createLogger } from '@phalanx/shared';
 import { ProviderRegistry } from './providers/registry';
 import { completionRoutes } from './routes/completions';
@@ -13,6 +14,10 @@ export async function createServer(): Promise<FastifyInstance> {
     logger: logger as any,
     requestIdLogLabel: 'requestId',
   });
+
+  // Set up Zod schema validation
+  server.setValidatorCompiler(validatorCompiler);
+  server.setSerializerCompiler(serializerCompiler);
 
   await server.register(fastifyCors);
   await server.register(fastifySensible);

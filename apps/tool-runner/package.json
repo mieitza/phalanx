@@ -17,6 +17,7 @@
   "dependencies": {
     "@fastify/cors": "^8.5.0",
     "@fastify/sensible": "^5.5.0",
+    "fastify-type-provider-zod": "^2.0.0",
     "@phalanx/schemas": "workspace:*",
     "@phalanx/shared": "workspace:*",
     "dockerode": "^4.0.2",
