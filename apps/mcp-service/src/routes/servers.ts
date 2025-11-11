@@ -41,43 +41,41 @@ export const serverRoutes: FastifyPluginAsync = async (server) => {
   const serverManager: MCPServerManager = (server as any).serverManager;
 
   // Register a new MCP server
-  server.post<{
-    Body: z.infer<typeof RegisterServerSchema>;
-    Headers: { 'x-tenant-id': string };
-  }>(
-    '/',
-    {
-      schema: {
-        body: RegisterServerSchema,
-      },
-    },
-    async (request, reply) => {
-      const tenantId = request.headers['x-tenant-id'];
+  server.post('/', async (request, reply) => {
+    const tenantId = request.headers['x-tenant-id'] as string;
 
-      if (!tenantId) {
-        return reply.status(400).send({
-          error: 'Missing x-tenant-id header',
-        });
-      }
-
-      logger.info({ tenantId, name: request.body.name }, 'Registering MCP server');
-
-      try {
-        const registered = await serverManager.registerServer({
-          ...request.body,
-          tenantId,
-        });
-
-        return registered;
-      } catch (error: any) {
-        logger.error({ error }, 'Failed to register server');
-        return reply.status(500).send({
-          error: 'Failed to register server',
-          message: error.message,
-        });
-      }
+    if (!tenantId) {
+      return reply.status(400).send({
+        error: 'Missing x-tenant-id header',
+      });
     }
-  );
+
+    // Validate request body
+    const result = RegisterServerSchema.safeParse(request.body);
+    if (!result.success) {
+      return reply.status(400).send({
+        error: 'Invalid request body',
+        details: result.error.errors,
+      });
+    }
+
+    logger.info({ tenantId, name: result.data.name }, 'Registering MCP server');
+
+    try {
+      const registered = await serverManager.registerServer({
+        ...result.data,
+        tenantId,
+      });
+
+      return registered;
+    } catch (error: any) {
+      logger.error({ error }, 'Failed to register server');
+      return reply.status(500).send({
+        error: 'Failed to register server',
+        message: error.message,
+      });
+    }
+  });
 
   // List all registered servers
   server.get<{
@@ -200,34 +198,35 @@ export const serverRoutes: FastifyPluginAsync = async (server) => {
   // Call tool on specific server
   server.post<{
     Params: { serverId: string };
-    Body: z.infer<typeof CallToolSchema>;
-  }>(
-    '/:serverId/tools/call',
-    {
-      schema: {
-        body: CallToolSchema,
-      },
-    },
-    async (request, reply) => {
-      const { serverId } = request.params;
-      const { name, arguments: args } = request.body;
+  }>('/:serverId/tools/call', async (request, reply) => {
+    const { serverId } = request.params;
 
-      logger.info({ serverId, toolName: name }, 'Calling tool on server');
-
-      try {
-        const response = await serverManager.callTool(serverId, {
-          name,
-          arguments: args,
-        });
-
-        return response;
-      } catch (error: any) {
-        logger.error({ error, serverId, toolName: name }, 'Failed to call tool');
-        return reply.status(500).send({
-          error: 'Failed to call tool',
-          message: error.message,
-        });
-      }
+    // Validate request body
+    const result = CallToolSchema.safeParse(request.body);
+    if (!result.success) {
+      return reply.status(400).send({
+        error: 'Invalid request body',
+        details: result.error.errors,
+      });
     }
-  );
+
+    const { name, arguments: args } = result.data;
+
+    logger.info({ serverId, toolName: name }, 'Calling tool on server');
+
+    try {
+      const response = await serverManager.callTool(serverId, {
+        name,
+        arguments: args,
+      });
+
+      return response;
+    } catch (error: any) {
+      logger.error({ error, serverId, toolName: name }, 'Failed to call tool');
+      return reply.status(500).send({
+        error: 'Failed to call tool',
+        message: error.message,
+      });
+    }
+  });
 };

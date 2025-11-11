@@ -8,7 +8,7 @@ import {
   serializeContext,
   deserializeContext,
 } from '@phalanx/workflow-engine';
-import { createDatabase, DatabaseInstance } from '@phalanx/database';
+import { createDatabase, DatabaseInstance, schema } from '@phalanx/database';
 import { createLogger } from '@phalanx/shared';
 import { eq, and } from 'drizzle-orm';
 
@@ -44,7 +44,7 @@ export class WorkflowManager {
     logger.info({ workflowId: workflow.id, tenantId }, 'Creating workflow');
 
     // Store workflow in database
-    await this.db.db.insert(this.db.schema.workflows).values({
+    await this.db.db.insert(schema.workflows).values({
       id: workflow.id,
       tenantId,
       name: workflow.name || workflow.id,
@@ -62,10 +62,10 @@ export class WorkflowManager {
   async getWorkflow(workflowId: string, tenantId: string): Promise<Workflow | null> {
     const [workflow] = await this.db.db
       .select()
-      .from(this.db.schema.workflows)
+      .from(schema.workflows)
       .where(
-        this.db.schema.workflows.id.eq(workflowId).and(
-          this.db.schema.workflows.tenantId.eq(tenantId)
+        schema.workflows.id.eq(workflowId).and(
+          schema.workflows.tenantId.eq(tenantId)
         )
       )
       .limit(1);
@@ -112,7 +112,7 @@ export class WorkflowManager {
     this.runMetadata.set(runId, metadata);
 
     // Store run in database
-    await this.db.db.insert(this.db.schema.runs).values({
+    await this.db.db.insert(schema.runs).values({
       id: runId,
       workflowId,
       tenantId,
@@ -261,7 +261,7 @@ export class WorkflowManager {
     }
 
     // Store event in database (optional - could be for audit trail)
-    // await this.db.db.insert(this.db.schema.runEvents).values({ ... });
+    // await this.db.db.insert(schema.runEvents).values({ ... });
   }
 
   private async updateRunStatus(
@@ -286,12 +286,12 @@ export class WorkflowManager {
 
     // Update database
     await this.db.db
-      .update(this.db.schema.runs)
+      .update(schema.runs)
       .set({
         status,
         endedAt: metadata.completedAt,
       })
-      .where(eq(this.db.schema.runs.id, runId));
+      .where(eq(schema.runs.id, runId));
   }
 
   /**
@@ -304,11 +304,11 @@ export class WorkflowManager {
       // Check if node record exists
       const existing = await this.db.db
         .select()
-        .from(this.db.schema.runNodes)
+        .from(schema.runNodes)
         .where(
           and(
-            eq(this.db.schema.runNodes.runId, runId),
-            eq(this.db.schema.runNodes.nodeId, update.nodeId)
+            eq(schema.runNodes.runId, runId),
+            eq(schema.runNodes.nodeId, update.nodeId)
           )
         )
         .limit(1);
@@ -316,7 +316,7 @@ export class WorkflowManager {
       if (existing.length > 0) {
         // Update existing record
         await this.db.db
-          .update(this.db.schema.runNodes)
+          .update(schema.runNodes)
           .set({
             status: update.status,
             output: update.output ? JSON.stringify(update.output) : null,
@@ -325,13 +325,13 @@ export class WorkflowManager {
           })
           .where(
             and(
-              eq(this.db.schema.runNodes.runId, runId),
-              eq(this.db.schema.runNodes.nodeId, update.nodeId)
+              eq(schema.runNodes.runId, runId),
+              eq(schema.runNodes.nodeId, update.nodeId)
             )
           );
       } else {
         // Insert new record
-        await this.db.db.insert(this.db.schema.runNodes).values({
+        await this.db.db.insert(schema.runNodes).values({
           id: nanoid(),
           runId,
           nodeId: update.nodeId,
@@ -359,9 +359,9 @@ export class WorkflowManager {
       // Find runs that were running or waiting when service stopped
       const interruptedRuns = await this.db.db
         .select()
-        .from(this.db.schema.runs)
+        .from(schema.runs)
         .where(
-          this.db.schema.runs.status.in(['running', 'waiting'])
+          schema.runs.status.in(['running', 'waiting'])
         );
 
       if (interruptedRuns.length === 0) {
@@ -378,12 +378,12 @@ export class WorkflowManager {
           logger.error({ runId: run.id, error }, 'Failed to resume run');
           // Mark as failed
           await this.db.db
-            .update(this.db.schema.runs)
+            .update(schema.runs)
             .set({
               status: 'failed',
               endedAt: new Date(),
             })
-            .where(eq(this.db.schema.runs.id, run.id));
+            .where(eq(schema.runs.id, run.id));
         }
       }
 
@@ -403,8 +403,8 @@ export class WorkflowManager {
     // Get run from database
     const [run] = await this.db.db
       .select()
-      .from(this.db.schema.runs)
-      .where(eq(this.db.schema.runs.id, runId))
+      .from(schema.runs)
+      .where(eq(schema.runs.id, runId))
       .limit(1);
 
     if (!run) {
@@ -421,8 +421,8 @@ export class WorkflowManager {
     // Get completed nodes
     const runNodes = await this.db.db
       .select()
-      .from(this.db.schema.runNodes)
-      .where(eq(this.db.schema.runNodes.runId, runId));
+      .from(schema.runNodes)
+      .where(eq(schema.runNodes.runId, runId));
 
     const completedNodeIds = runNodes
       .filter(n => n.status === 'completed')
@@ -442,9 +442,9 @@ export class WorkflowManager {
 
     // Update run status
     await this.db.db
-      .update(this.db.schema.runs)
+      .update(schema.runs)
       .set({ status: 'running' })
-      .where(eq(this.db.schema.runs.id, runId));
+      .where(eq(schema.runs.id, runId));
 
     // Create metadata
     const metadata: RunMetadata = {

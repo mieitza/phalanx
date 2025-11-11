@@ -21,6 +21,7 @@
     "@phalanx/schemas": "workspace:*",
     "@phalanx/shared": "workspace:*",
     "@phalanx/workflow-engine": "workspace:*",
+    "drizzle-orm": "^0.36.4",
     "fastify": "^4.25.2",
     "fastify-type-provider-zod": "^2.0.0",
     "nanoid": "^5.0.4",

@@ -60,56 +60,57 @@ export const toolRoutes: FastifyPluginAsync = async (server) => {
 
   // Call tool with auto-discovery
   server.post<{
-    Body: z.infer<typeof CallToolSchema>;
     Headers: { 'x-tenant-id': string };
-  }>(
-    '/call',
-    {
-      schema: {
-        body: CallToolSchema,
-      },
-    },
-    async (request, reply) => {
-      const { name, arguments: args, serverId } = request.body;
-      const tenantId = request.headers['x-tenant-id'];
+  }>('/call', async (request, reply) => {
+    const tenantId = request.headers['x-tenant-id'];
 
-      if (!tenantId) {
-        return reply.status(400).send({
-          error: 'Missing x-tenant-id header',
-        });
-      }
-
-      let targetServerId = serverId;
-
-      // Auto-discover server if not provided
-      if (!targetServerId) {
-        const found = serverManager.findTool(name, tenantId);
-
-        if (!found) {
-          return reply.status(404).send({
-            error: 'Tool not found',
-          });
-        }
-
-        targetServerId = found.serverId;
-      }
-
-      logger.info({ serverId: targetServerId, toolName: name }, 'Calling tool');
-
-      try {
-        const response = await serverManager.callTool(targetServerId, {
-          name,
-          arguments: args,
-        });
-
-        return response;
-      } catch (error: any) {
-        logger.error({ error, serverId: targetServerId, toolName: name }, 'Failed to call tool');
-        return reply.status(500).send({
-          error: 'Failed to call tool',
-          message: error.message,
-        });
-      }
+    if (!tenantId) {
+      return reply.status(400).send({
+        error: 'Missing x-tenant-id header',
+      });
     }
-  );
+
+    // Validate request body
+    const result = CallToolSchema.safeParse(request.body);
+    if (!result.success) {
+      return reply.status(400).send({
+        error: 'Invalid request body',
+        details: result.error.errors,
+      });
+    }
+
+    const { name, arguments: args, serverId } = result.data;
+
+    let targetServerId = serverId;
+
+    // Auto-discover server if not provided
+    if (!targetServerId) {
+      const found = serverManager.findTool(name, tenantId);
+
+      if (!found) {
+        return reply.status(404).send({
+          error: 'Tool not found',
+        });
+      }
+
+      targetServerId = found.serverId;
+    }
+
+    logger.info({ serverId: targetServerId, toolName: name }, 'Calling tool');
+
+    try {
+      const response = await serverManager.callTool(targetServerId, {
+        name,
+        arguments: args,
+      });
+
+      return response;
+    } catch (error: any) {
+      logger.error({ error, serverId: targetServerId, toolName: name }, 'Failed to call tool');
+      return reply.status(500).send({
+        error: 'Failed to call tool',
+        message: error.message,
+      });
+    }
+  });
 };
