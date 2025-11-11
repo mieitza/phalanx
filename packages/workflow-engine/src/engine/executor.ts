@@ -164,6 +164,8 @@ export class WorkflowExecutor extends EventEmitter<{
 
     logger.info({ nodeId: node.id, type: node.type }, 'Executing node');
 
+    const startedAt = new Date();
+
     try {
       const result = await executor.execute(node, context);
 
@@ -177,11 +179,26 @@ export class WorkflowExecutor extends EventEmitter<{
       this.runningNodes.delete(node.id);
       this.completedNodes.add(node.id);
 
+      const completedAt = new Date();
+
+      // Persist node state
+      if (this.config.persistenceCallback) {
+        await this.config.persistenceCallback({
+          nodeId: node.id,
+          status: 'completed',
+          output: result.output,
+          startedAt,
+          completedAt,
+        }).catch(err => {
+          logger.error({ nodeId: node.id, err }, 'Failed to persist node state');
+        });
+      }
+
       this.emitEvent({
         type: 'node_completed',
         runId: context.runId,
         nodeId: node.id,
-        timestamp: new Date(),
+        timestamp: completedAt,
         data: result.output,
       });
 
@@ -190,16 +207,103 @@ export class WorkflowExecutor extends EventEmitter<{
       this.runningNodes.delete(node.id);
       this.failedNodes.add(node.id);
 
+      const completedAt = new Date();
+
+      // Persist node failure
+      if (this.config.persistenceCallback) {
+        await this.config.persistenceCallback({
+          nodeId: node.id,
+          status: 'failed',
+          error: (error as Error).message,
+          startedAt,
+          completedAt,
+        }).catch(err => {
+          logger.error({ nodeId: node.id, err }, 'Failed to persist node failure');
+        });
+      }
+
       this.emitEvent({
         type: 'node_failed',
         runId: context.runId,
         nodeId: node.id,
-        timestamp: new Date(),
+        timestamp: completedAt,
         data: { error: (error as Error).message },
       });
 
       logger.error({ nodeId: node.id, error }, 'Node execution failed');
     }
+  }
+
+  /**
+   * Resume workflow execution from saved state
+   */
+  async resume(
+    workflow: Workflow,
+    context: WorkflowContext,
+    completedNodeIds: string[]
+  ): Promise<void> {
+    logger.info(
+      { runId: context.runId, completedNodes: completedNodeIds.length },
+      'Resuming workflow execution'
+    );
+
+    // Restore completed nodes state
+    this.completedNodes = new Set(completedNodeIds);
+    this.runningNodes.clear();
+    this.failedNodes.clear();
+    this.cancelRequested = false;
+
+    // Validate workflow DAG
+    try {
+      DAGValidator.validate(workflow);
+    } catch (error) {
+      logger.error({ error }, 'Workflow validation failed');
+      this.emitEvent({
+        type: 'workflow_failed',
+        runId: context.runId,
+        timestamp: new Date(),
+        data: { error: (error as Error).message },
+      });
+      throw error;
+    }
+
+    // Resume execution
+    try {
+      await this.executeWorkflow(workflow, context);
+
+      if (!this.cancelRequested) {
+        logger.info({ runId: context.runId }, 'Workflow resumed and completed successfully');
+        this.emitEvent({
+          type: 'workflow_completed',
+          runId: context.runId,
+          timestamp: new Date(),
+        });
+      }
+    } catch (error) {
+      logger.error({ runId: context.runId, error }, 'Workflow execution failed after resume');
+      this.emitEvent({
+        type: 'workflow_failed',
+        runId: context.runId,
+        timestamp: new Date(),
+        data: { error: (error as Error).message },
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get current execution state
+   */
+  getState(): {
+    completedNodes: string[];
+    runningNodes: string[];
+    failedNodes: string[];
+  } {
+    return {
+      completedNodes: Array.from(this.completedNodes),
+      runningNodes: Array.from(this.runningNodes),
+      failedNodes: Array.from(this.failedNodes),
+    };
   }
 
   /**

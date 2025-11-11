@@ -18,9 +18,30 @@ export { DAGValidator, DAGValidationError } from './validators/dag';
 // Types
 export type {
   WorkflowContext,
+  SerializedContext,
   NodeExecutionResult,
   ExecutionEvent,
   WorkflowEngineConfig,
   WorkflowNodeType,
   WorkflowNodeStatus,
+  NodeStateUpdate,
 } from './types';
+
+// Utility functions
+export function serializeContext(context: WorkflowContext): SerializedContext {
+  return {
+    runId: context.runId,
+    tenantId: context.tenantId,
+    variables: context.variables,
+    outputs: Object.fromEntries(context.outputs),
+  };
+}
+
+export function deserializeContext(serialized: SerializedContext): WorkflowContext {
+  return {
+    runId: serialized.runId,
+    tenantId: serialized.tenantId,
+    variables: serialized.variables,
+    outputs: new Map(Object.entries(serialized.outputs)),
+  };
+}

@@ -53,6 +53,29 @@ export const runRoutes: FastifyPluginAsync = async (server) => {
     };
   });
 
+  // Resume run
+  server.post<{
+    Params: { runId: string };
+  }>('/:runId/resume', async (request, reply) => {
+    const { runId } = request.params;
+
+    logger.info({ runId }, 'Resuming run');
+
+    try {
+      await workflowManager.resumeRun(runId);
+
+      return {
+        status: 'resumed',
+      };
+    } catch (error: any) {
+      logger.error({ runId, error }, 'Failed to resume run');
+      return reply.status(500).send({
+        error: 'Failed to resume run',
+        message: error.message,
+      });
+    }
+  });
+
   // Get pending approvals
   server.get<{
     Params: { runId: string };

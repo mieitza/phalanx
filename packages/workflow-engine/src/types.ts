@@ -11,6 +11,13 @@ export interface WorkflowContext {
   outputs: Map<string, unknown>;
 }
 
+export interface SerializedContext {
+  runId: string;
+  tenantId: string;
+  variables: Record<string, unknown>;
+  outputs: Record<string, unknown>;
+}
+
 export interface NodeExecutionResult {
   output: unknown;
   error?: Error;
@@ -25,9 +32,19 @@ export interface ExecutionEvent {
   data?: unknown;
 }
 
+export interface NodeStateUpdate {
+  nodeId: string;
+  status: WorkflowNodeStatus;
+  output?: unknown;
+  error?: string;
+  startedAt?: Date;
+  completedAt?: Date;
+}
+
 export interface WorkflowEngineConfig {
   maxConcurrentNodes?: number;
   nodeTimeout?: number;
   enableRetries?: boolean;
   maxRetries?: number;
+  persistenceCallback?: (update: NodeStateUpdate) => Promise<void>;
 }
