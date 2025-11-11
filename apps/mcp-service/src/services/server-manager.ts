@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
 import { createLogger } from '@phalanx/shared';
-import { createDatabase, DatabaseInstance } from '@phalanx/database';
+import { createDatabase, DatabaseInstance, schema } from '@phalanx/database';
 import { eq } from 'drizzle-orm';
 import {
   MCPClient,
@@ -58,7 +58,7 @@ export class MCPServerManager {
     logger.info({ id, name: config.name }, 'Registering MCP server');
 
     // Store in database
-    await this.db.db.insert(this.db.schema.mcpServers).values({
+    await this.db.db.insert(schema.mcpServers).values({
       id,
       tenantId: config.tenantId,
       name: config.name,
@@ -118,7 +118,7 @@ export class MCPServerManager {
         this.handleDisconnect(serverId);
       });
 
-      client.on('error', (error) => {
+      client.on('error', (error: Error) => {
         logger.error({ serverId, error }, 'Server error');
         server.error = error.message;
         this.servers.set(serverId, server);
@@ -195,8 +195,8 @@ export class MCPServerManager {
 
     // Remove from database
     await this.db.db
-      .delete(this.db.schema.mcpServers)
-      .where(eq(this.db.schema.mcpServers.id, serverId));
+      .delete(schema.mcpServers)
+      .where(eq(schema.mcpServers.id, serverId));
 
     this.servers.delete(serverId);
   }
@@ -298,11 +298,11 @@ export class MCPServerManager {
 
       // Update database
       await this.db.db
-        .update(this.db.schema.mcpServers)
+        .update(schema.mcpServers)
         .set({
           tools: JSON.stringify(tools),
         })
-        .where(eq(this.db.schema.mcpServers.id, serverId));
+        .where(eq(schema.mcpServers.id, serverId));
 
       logger.info({ serverId, toolCount: tools.length }, 'Tools refreshed');
     } catch (error) {
@@ -333,7 +333,7 @@ export class MCPServerManager {
   private async loadServers(): Promise<void> {
     logger.info('Loading MCP servers from database');
 
-    const servers = await this.db.db.select().from(this.db.schema.mcpServers);
+    const servers = await this.db.db.select().from(schema.mcpServers);
 
     for (const server of servers) {
       const registeredServer: RegisteredServer = {
@@ -371,13 +371,13 @@ export class MCPServerManager {
     error?: string
   ): Promise<void> {
     await this.db.db
-      .update(this.db.schema.mcpServers)
+      .update(schema.mcpServers)
       .set({
         status,
         serverInfo: serverInfo ? JSON.stringify(serverInfo) : undefined,
         tools: tools ? JSON.stringify(tools) : undefined,
         error,
       })
-      .where(eq(this.db.schema.mcpServers.id, serverId));
+      .where(eq(schema.mcpServers.id, serverId));
   }
 }

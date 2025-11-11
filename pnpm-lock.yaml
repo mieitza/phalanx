@@ -172,6 +172,9 @@ importers:
       '@phalanx/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(@types/better-sqlite3@7.6.13)(better-sqlite3@9.6.0)
       fastify:
         specifier: ^4.25.2
         version: 4.29.1
