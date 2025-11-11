@@ -18,7 +18,7 @@ export interface RunMetadata {
   runId: string;
   workflowId: string;
   tenantId: string;
-  status: 'queued' | 'running' | 'waiting' | 'completed' | 'failed' | 'cancelled';
+  status: 'queued' | 'running' | 'waiting' | 'succeeded' | 'failed' | 'canceled';
   startedAt: Date;
   completedAt?: Date;
   error?: string;
@@ -49,7 +49,8 @@ export class WorkflowManager {
       tenantId,
       name: workflow.name || workflow.id,
       description: workflow.description,
-      nodes: JSON.stringify(workflow.nodes),
+      version: '1.0.0',
+      definition: workflow as any,
       createdAt: new Date(),
     });
 
@@ -64,8 +65,9 @@ export class WorkflowManager {
       .select()
       .from(schema.workflows)
       .where(
-        schema.workflows.id.eq(workflowId).and(
-          schema.workflows.tenantId.eq(tenantId)
+        and(
+          eq(schema.workflows.id, workflowId),
+          eq(schema.workflows.tenantId, tenantId)
         )
       )
       .limit(1);
@@ -74,12 +76,7 @@ export class WorkflowManager {
       return null;
     }
 
-    return {
-      id: workflow.id,
-      name: workflow.name,
-      description: workflow.description || undefined,
-      nodes: JSON.parse(workflow.nodes as string),
-    };
+    return workflow.definition as Workflow;
   }
 
   /**
@@ -149,7 +146,7 @@ export class WorkflowManager {
       .execute(workflow, context)
       .then(() => {
         logger.info({ runId }, 'Workflow completed successfully');
-        this.updateRunStatus(runId, 'completed');
+        this.updateRunStatus(runId, 'succeeded');
       })
       .catch((error) => {
         logger.error({ runId, error }, 'Workflow execution failed');
@@ -179,7 +176,7 @@ export class WorkflowManager {
 
     logger.info({ runId }, 'Cancelling workflow run');
     executor.cancel();
-    this.updateRunStatus(runId, 'cancelled');
+    this.updateRunStatus(runId, 'canceled');
 
     return true;
   }
@@ -278,7 +275,7 @@ export class WorkflowManager {
     metadata.status = status;
     metadata.error = error;
 
-    if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+    if (status === 'succeeded' || status === 'failed' || status === 'canceled') {
       metadata.completedAt = new Date();
     }
 
@@ -301,6 +298,15 @@ export class WorkflowManager {
     logger.info({ runId, nodeId: update.nodeId, status: update.status }, 'Persisting node state');
 
     try {
+      // Map workflow engine status to database status
+      // Skip persisting 'waiting' and 'skipped' nodes as they haven't executed yet
+      if (update.status === 'waiting' || update.status === 'skipped') {
+        return;
+      }
+
+      // Map 'completed' to 'succeeded' for database
+      const dbStatus = update.status === 'completed' ? 'succeeded' : update.status;
+
       // Check if node record exists
       const existing = await this.db.db
         .select()
@@ -318,10 +324,10 @@ export class WorkflowManager {
         await this.db.db
           .update(schema.runNodes)
           .set({
-            status: update.status,
-            output: update.output ? JSON.stringify(update.output) : null,
+            status: dbStatus,
+            outputs: update.output ? JSON.stringify(update.output) : null,
             error: update.error,
-            completedAt: update.completedAt,
+            endedAt: update.completedAt,
           })
           .where(
             and(
@@ -335,11 +341,13 @@ export class WorkflowManager {
           id: nanoid(),
           runId,
           nodeId: update.nodeId,
-          status: update.status,
-          output: update.output ? JSON.stringify(update.output) : null,
+          type: 'prompt' as any, // Default type, should be from workflow definition
+          status: dbStatus,
+          inputs: null,
+          outputs: update.output ? JSON.stringify(update.output) : null,
           error: update.error,
           startedAt: update.startedAt,
-          completedAt: update.completedAt,
+          endedAt: update.completedAt,
           createdAt: new Date(),
         });
       }
@@ -425,7 +433,7 @@ export class WorkflowManager {
       .where(eq(schema.runNodes.runId, runId));
 
     const completedNodeIds = runNodes
-      .filter(n => n.status === 'completed')
+      .filter(n => n.status === 'succeeded')
       .map(n => n.nodeId);
 
     // Reconstruct context with saved outputs
@@ -435,8 +443,8 @@ export class WorkflowManager {
       variables: run.inputs ? JSON.parse(run.inputs as string) : {},
       outputs: new Map(
         runNodes
-          .filter(n => n.status === 'completed' && n.output)
-          .map(n => [n.nodeId, JSON.parse(n.output as string)])
+          .filter(n => n.status === 'succeeded' && n.outputs)
+          .map(n => [n.nodeId, JSON.parse(n.outputs as string)])
       ),
     };
 
@@ -476,7 +484,7 @@ export class WorkflowManager {
       .resume(workflow, context, completedNodeIds)
       .then(() => {
         logger.info({ runId }, 'Workflow resumed and completed');
-        this.updateRunStatus(runId, 'completed');
+        this.updateRunStatus(runId, 'succeeded');
       })
       .catch((error) => {
         logger.error({ runId, error }, 'Workflow failed after resume');
