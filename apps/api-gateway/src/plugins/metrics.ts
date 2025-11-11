@@ -1,6 +1,13 @@
 import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import { Registry, Counter, Histogram, Gauge, collectDefaultMetrics } from 'prom-client';
+import { IncomingMessage } from 'http';
+
+declare module 'http' {
+  interface IncomingMessage {
+    startTime?: number;
+  }
+}
 
 declare module 'fastify' {
   interface FastifyInstance {

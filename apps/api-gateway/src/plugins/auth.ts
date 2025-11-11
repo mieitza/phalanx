@@ -4,15 +4,17 @@ import fastifyJwt from '@fastify/jwt';
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { AuthenticationError, AuthorizationError, type Role } from '@phalanx/shared';
 
-declare module 'fastify' {
-  interface FastifyRequest {
-    user?: {
-      sub: string;
-      email: string;
-      name: string;
-      tenantId: string;
-      roles: Role[];
-    };
+export interface UserPayload {
+  sub: string;
+  email: string;
+  name: string;
+  tenantId: string;
+  roles: Role[];
+}
+
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    user: UserPayload;
   }
 }
 
