@@ -26,7 +26,7 @@ export class LLMNodeExecutor extends NodeExecutor {
     node: WorkflowNode,
     context: WorkflowContext
   ): Promise<NodeExecutionResult> {
-    const config = node.config as LLMNodeConfig;
+    const config = node.config as unknown as LLMNodeConfig;
 
     if (!config.model) {
       return {
@@ -70,7 +70,7 @@ export class LLMNodeExecutor extends NodeExecutor {
           {
             nodeId: node.id,
             model: config.model,
-            tokensUsed: result.usage?.totalTokens,
+            tokensUsed: (result as any).usage?.totalTokens,
           },
           'LLM node completed'
         );
@@ -79,7 +79,7 @@ export class LLMNodeExecutor extends NodeExecutor {
           output: result,
           metadata: {
             model: config.model,
-            usage: result.usage,
+            usage: (result as any).usage,
           },
         };
       } catch (error) {
@@ -89,34 +89,4 @@ export class LLMNodeExecutor extends NodeExecutor {
     }, 3, node.id);
   }
 
-  private resolveValue(value: string, context: WorkflowContext): string {
-    return value.replace(/\$\{([^}]+)\}/g, (match, path) => {
-      const parts = path.split('.');
-
-      if (parts[0] === 'outputs' && parts.length >= 2) {
-        const nodeId = parts[1];
-        const output = context.outputs.get(nodeId);
-
-        if (!output) return match;
-
-        let result: any = output;
-        for (let i = 2; i < parts.length; i++) {
-          if (result && typeof result === 'object') {
-            result = result[parts[i]];
-          } else {
-            return match;
-          }
-        }
-
-        return result !== undefined ? String(result) : match;
-      }
-
-      if (parts[0] === 'variables' && parts.length === 2) {
-        const value = context.variables[parts[1]];
-        return value !== undefined ? String(value) : match;
-      }
-
-      return match;
-    });
-  }
 }

@@ -35,7 +35,7 @@ export abstract class NodeExecutor {
     return resolved;
   }
 
-  private resolveValue(value: unknown, context: WorkflowContext): unknown {
+  protected resolveValue(value: unknown, context: WorkflowContext): unknown {
     if (typeof value === 'string') {
       // Replace ${outputs.nodeId.field} syntax
       return value.replace(/\$\{([^}]+)\}/g, (match, path) => {

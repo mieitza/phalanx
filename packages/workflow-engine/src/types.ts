@@ -1,6 +1,4 @@
-import type { Run, RunNode } from '@phalanx/schemas';
-
-export type WorkflowNodeType = 'llm' | 'tool' | 'human' | 'conditional';
+export type WorkflowNodeType = 'llm' | 'tool' | 'human' | 'mcp' | 'conditional';
 
 export type WorkflowNodeStatus = 'pending' | 'running' | 'completed' | 'failed' | 'waiting' | 'skipped';
 

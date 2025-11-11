@@ -47,9 +47,15 @@ importers:
       '@opentelemetry/exporter-trace-otlp-http':
         specifier: ^0.45.1
         version: 0.45.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/resources':
+        specifier: ^1.18.1
+        version: 1.30.1(@opentelemetry/api@1.9.0)
       '@opentelemetry/sdk-node':
         specifier: ^0.45.1
         version: 0.45.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/semantic-conventions':
+        specifier: ^1.18.1
+        version: 1.38.0
       '@phalanx/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
@@ -59,6 +65,9 @@ importers:
       fastify:
         specifier: ^4.25.2
         version: 4.29.1
+      fastify-plugin:
+        specifier: ^4.5.1
+        version: 4.5.1
       ioredis:
         specifier: ^5.3.2
         version: 5.8.2
@@ -114,6 +123,9 @@ importers:
       fastify:
         specifier: ^4.25.2
         version: 4.29.1
+      fastify-type-provider-zod:
+        specifier: ^2.0.0
+        version: 2.1.0(fastify@4.29.1)(zod@3.25.76)
       ioredis:
         specifier: ^5.3.2
         version: 5.8.2
@@ -143,6 +155,49 @@ importers:
         specifier: ^1.0.4
         version: 1.6.1(@types/node@20.19.24)
 
+  apps/mcp-service:
+    dependencies:
+      '@fastify/cors':
+        specifier: ^9.0.1
+        version: 9.0.1
+      '@phalanx/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@phalanx/mcp-client':
+        specifier: workspace:*
+        version: link:../../packages/mcp-client
+      '@phalanx/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
+      '@phalanx/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      fastify:
+        specifier: ^4.25.2
+        version: 4.29.1
+      fastify-plugin:
+        specifier: ^4.5.1
+        version: 4.5.1
+      fastify-type-provider-zod:
+        specifier: ^2.0.0
+        version: 2.1.0(fastify@4.29.1)(zod@3.25.76)
+      nanoid:
+        specifier: ^5.0.4
+        version: 5.1.6
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.6
+        version: 20.19.24
+      tsx:
+        specifier: ^4.7.0
+        version: 4.20.6
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
   apps/tool-runner:
     dependencies:
       '@fastify/cors':
@@ -169,6 +224,9 @@ importers:
       fastify:
         specifier: ^4.25.2
         version: 4.29.1
+      fastify-type-provider-zod:
+        specifier: ^2.0.0
+        version: 2.1.0(fastify@4.29.1)(zod@3.25.76)
       ioredis:
         specifier: ^5.3.2
         version: 5.8.2
@@ -199,27 +257,45 @@ importers:
         specifier: ^1.0.4
         version: 1.6.1(@types/node@20.19.24)
 
-  packages/database:
+  apps/workflow-service:
     dependencies:
+      '@fastify/cors':
+        specifier: ^8.5.0
+        version: 8.5.0
+      '@fastify/sensible':
+        specifier: ^5.5.0
+        version: 5.6.0
+      '@phalanx/database':
+        specifier: workspace:*
+        version: link:../../packages/database
+      '@phalanx/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@phalanx/shared':
         specifier: workspace:*
-        version: link:../shared
-      better-sqlite3:
-        specifier: ^9.2.2
-        version: 9.6.0
-      drizzle-orm:
-        specifier: ^0.33.0
-        version: 0.33.0(@types/better-sqlite3@7.6.13)(better-sqlite3@9.6.0)
+        version: link:../../packages/shared
+      '@phalanx/workflow-engine':
+        specifier: workspace:*
+        version: link:../../packages/workflow-engine
+      fastify:
+        specifier: ^4.25.2
+        version: 4.29.1
+      fastify-type-provider-zod:
+        specifier: ^2.0.0
+        version: 2.1.0(fastify@4.29.1)(zod@3.25.76)
+      nanoid:
+        specifier: ^5.0.4
+        version: 5.1.6
+      prom-client:
+        specifier: ^15.1.0
+        version: 15.1.3
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
     devDependencies:
-      '@types/better-sqlite3':
-        specifier: ^7.6.8
-        version: 7.6.13
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.24
-      drizzle-kit:
-        specifier: ^0.26.0
-        version: 0.26.2
       tsx:
         specifier: ^4.7.0
         version: 4.20.6
@@ -229,6 +305,59 @@ importers:
       vitest:
         specifier: ^1.0.4
         version: 1.6.1(@types/node@20.19.24)
+
+  packages/database:
+    dependencies:
+      '@phalanx/shared':
+        specifier: workspace:*
+        version: link:../shared
+      better-sqlite3:
+        specifier: ^9.2.2
+        version: 9.6.0
+      drizzle-orm:
+        specifier: ^0.36.0
+        version: 0.36.4(@types/better-sqlite3@7.6.13)(better-sqlite3@9.6.0)
+    devDependencies:
+      '@types/better-sqlite3':
+        specifier: ^7.6.8
+        version: 7.6.13
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.24
+      drizzle-kit:
+        specifier: ^0.28.0
+        version: 0.28.1
+      tsx:
+        specifier: ^4.7.0
+        version: 4.20.6
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.4
+        version: 1.6.1(@types/node@20.19.24)
+
+  packages/mcp-client:
+    dependencies:
+      '@phalanx/shared':
+        specifier: workspace:*
+        version: link:../shared
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
+      nanoid:
+        specifier: ^5.0.4
+        version: 5.1.6
+      ws:
+        specifier: ^8.16.0
+        version: 8.18.3
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
+    devDependencies:
+      '@types/ws':
+        specifier: ^8.5.10
+        version: 8.18.1
 
   packages/schemas:
     dependencies:
@@ -254,6 +383,37 @@ importers:
       pino-pretty:
         specifier: ^10.3.0
         version: 10.3.1
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.24
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+      vitest:
+        specifier: ^1.0.4
+        version: 1.6.1(@types/node@20.19.24)
+
+  packages/workflow-engine:
+    dependencies:
+      '@phalanx/database':
+        specifier: workspace:*
+        version: link:../database
+      '@phalanx/schemas':
+        specifier: workspace:*
+        version: link:../schemas
+      '@phalanx/shared':
+        specifier: workspace:*
+        version: link:../shared
+      eventemitter3:
+        specifier: ^5.0.1
+        version: 5.0.1
+      nanoid:
+        specifier: ^5.0.4
+        version: 5.1.6
+      zod:
+        specifier: ^3.22.4
+        version: 3.25.76
     devDependencies:
       '@types/node':
         specifier: ^20.10.0
@@ -1163,6 +1323,13 @@ packages:
 
   /@fastify/cors@8.5.0:
     resolution: {integrity: sha512-/oZ1QSb02XjP0IK1U0IXktEsw/dUBTxJOW7IpIeO8c/tNalw/KjoNSJv1Sf6eqoBPO+TDGkifq6ynFK3v68HFQ==}
+    dependencies:
+      fastify-plugin: 4.5.1
+      mnemonist: 0.39.6
+    dev: false
+
+  /@fastify/cors@9.0.1:
+    resolution: {integrity: sha512-YY9Ho3ovI+QHIL2hW+9X4XqQjXLjJqsU+sMV/xFsxZkE8p3GNnYVFpoOxF7SsP5ZL76gwvbo3V9L+FIekBGU4Q==}
     dependencies:
       fastify-plugin: 4.5.1
       mnemonist: 0.39.6
@@ -3169,6 +3336,12 @@ packages:
       '@types/node': 20.19.24
     dev: false
 
+  /@types/ws@8.18.1:
+    resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
+    dependencies:
+      '@types/node': 20.19.24
+    dev: true
+
   /@vitest/expect@1.6.1:
     resolution: {integrity: sha512-jXL+9+ZNIJKruofqXuuTClf44eSpcHlgj3CiuNihUF3Ioujtmc0zIa3UJOW5RjDK1YLBJZnWBlPuqhYycLioog==}
     dependencies:
@@ -3626,8 +3799,8 @@ packages:
       - supports-color
     dev: false
 
-  /drizzle-kit@0.26.2:
-    resolution: {integrity: sha512-cMq8omEKywjIy5KcqUo6LvEFxkl8/zYHsgYjFVXjmPWWtuW4blcz+YW9+oIhoaALgs2ebRjzXwsJgN9i6P49Dw==}
+  /drizzle-kit@0.28.1:
+    resolution: {integrity: sha512-JimOV+ystXTWMgZkLHYHf2w3oS28hxiH1FR0dkmJLc7GHzdGJoJAQtQS5DRppnabsRZwE2U1F6CuezVBgmsBBQ==}
     hasBin: true
     dependencies:
       '@drizzle-team/brocli': 0.10.2
@@ -3638,14 +3811,15 @@ packages:
       - supports-color
     dev: true
 
-  /drizzle-orm@0.33.0(@types/better-sqlite3@7.6.13)(better-sqlite3@9.6.0):
-    resolution: {integrity: sha512-SHy72R2Rdkz0LEq0PSG/IdvnT3nGiWuRk+2tXZQ90GVq/XQhpCzu/EFT3V2rox+w8MlkBQxifF8pCStNYnERfA==}
+  /drizzle-orm@0.36.4(@types/better-sqlite3@7.6.13)(better-sqlite3@9.6.0):
+    resolution: {integrity: sha512-1OZY3PXD7BR00Gl61UUOFihslDldfH4NFRH2MbP54Yxi0G/PKn4HfO65JYZ7c16DeP3SpM3Aw+VXVG9j6CRSXA==}
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=3'
-      '@electric-sql/pglite': '>=0.1.1'
-      '@libsql/client': '*'
-      '@neondatabase/serverless': '>=0.1'
+      '@electric-sql/pglite': '>=0.2.0'
+      '@libsql/client': '>=0.10.0'
+      '@libsql/client-wasm': '>=0.10.0'
+      '@neondatabase/serverless': '>=0.10.0'
       '@op-engineering/op-sqlite': '>=2'
       '@opentelemetry/api': ^1.4.1
       '@planetscale/database': '>=1'
@@ -3659,7 +3833,7 @@ packages:
       '@xata.io/client': '*'
       better-sqlite3: '>=7'
       bun-types: '*'
-      expo-sqlite: '>=13.2.0'
+      expo-sqlite: '>=14.0.0'
       knex: '*'
       kysely: '*'
       mysql2: '>=2'
@@ -3677,6 +3851,8 @@ packages:
       '@electric-sql/pglite':
         optional: true
       '@libsql/client':
+        optional: true
+      '@libsql/client-wasm':
         optional: true
       '@neondatabase/serverless':
         optional: true
@@ -4045,6 +4221,17 @@ packages:
 
   /fastify-plugin@4.5.1:
     resolution: {integrity: sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==}
+    dev: false
+
+  /fastify-type-provider-zod@2.1.0(fastify@4.29.1)(zod@3.25.76):
+    resolution: {integrity: sha512-p0plQyrxVR1IxJaOVbKRkduYh74HAS6Pm2szhFrc/vFdfIEu8UWo/cPFZCrcKyeo8ICjWbHH1zkx8lWw/ivpqg==}
+    peerDependencies:
+      fastify: ^4.0.0
+      zod: ^3.14.2
+    dependencies:
+      fastify: 4.29.1
+      zod: 3.25.76
+      zod-to-json-schema: 3.24.6(zod@3.25.76)
     dev: false
 
   /fastify@4.29.1:
@@ -4574,6 +4761,12 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
     dev: true
+
+  /nanoid@5.1.6:
+    resolution: {integrity: sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg==}
+    engines: {node: ^18 || >=20}
+    hasBin: true
+    dev: false
 
   /napi-build-utils@2.0.0:
     resolution: {integrity: sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==}
@@ -5658,6 +5851,19 @@ packages:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
     dev: false
 
+  /ws@8.18.3:
+    resolution: {integrity: sha512-PEIGCY5tSlUt50cqyMXfCzX+oOPqN0vuGqWzbcJ2xvnkzkq46oOpz7dQaTDBdfICb4N14+GARUDw2XV2N4tvzg==}
+    engines: {node: '>=10.0.0'}
+    peerDependencies:
+      bufferutil: ^4.0.1
+      utf-8-validate: '>=5.0.2'
+    peerDependenciesMeta:
+      bufferutil:
+        optional: true
+      utf-8-validate:
+        optional: true
+    dev: false
+
   /xorshift@1.2.0:
     resolution: {integrity: sha512-iYgNnGyeeJ4t6U11NpA/QiKy+PXn5Aa3Azg5qkwIFz1tBLllQrjjsk9yzD7IAK0naNU4JxdeDgqW9ov4u/hc4g==}
     dev: false
@@ -5694,6 +5900,14 @@ packages:
     resolution: {integrity: sha512-AyeEbWOu/TAXdxlV9wmGcR0+yh2j3vYPGOECcIj2S7MkrLyC7ne+oye2BKTItt0ii2PHk4cDy+95+LshzbXnGg==}
     engines: {node: '>=12.20'}
     dev: true
+
+  /zod-to-json-schema@3.24.6(zod@3.25.76):
+    resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
+    peerDependencies:
+      zod: ^3.24.1
+    dependencies:
+      zod: 3.25.76
+    dev: false
 
   /zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}

@@ -11,6 +11,7 @@ import { NodeExecutor } from '../executors/base';
 import { LLMNodeExecutor } from '../executors/llm';
 import { ToolNodeExecutor } from '../executors/tool';
 import { HumanNodeExecutor } from '../executors/human';
+import { MCPNodeExecutor } from '../executors/mcp';
 import { createLogger } from '@phalanx/shared';
 
 const logger = createLogger({ name: 'workflow-executor' });
@@ -31,6 +32,7 @@ export class WorkflowExecutor extends EventEmitter<{
     // Register default node executors
     this.registerExecutor(new LLMNodeExecutor());
     this.registerExecutor(new ToolNodeExecutor());
+    this.registerExecutor(new MCPNodeExecutor());
 
     // Human executor is special - we keep a reference for approval handling
     this.humanExecutor = new HumanNodeExecutor();

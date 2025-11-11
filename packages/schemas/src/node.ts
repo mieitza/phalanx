@@ -8,6 +8,10 @@ export const NodeTypeSchema = z.enum([
   'loop',
   'wait',
   'approval',
+  'llm',
+  'human',
+  'mcp',
+  'conditional',
 ]);
 
 export const NodeSchema = z.object({
@@ -24,7 +28,10 @@ export const NodeSchema = z.object({
       stack: z.string().optional(),
     })
     .optional(),
+  dependencies: z.array(z.string()).optional(),
+  config: z.record(z.unknown()).optional(),
 });
 
 export type Node = z.infer<typeof NodeSchema>;
 export type NodeType = z.infer<typeof NodeTypeSchema>;
+export type WorkflowNode = Node;

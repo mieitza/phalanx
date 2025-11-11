@@ -45,7 +45,7 @@ export class HumanNodeExecutor extends NodeExecutor {
     node: WorkflowNode,
     context: WorkflowContext
   ): Promise<NodeExecutionResult> {
-    const config = node.config as HumanNodeConfig;
+    const config = node.config as unknown as HumanNodeConfig;
 
     if (!config.title) {
       return {

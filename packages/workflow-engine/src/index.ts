@@ -11,6 +11,8 @@ export type {
   ApprovalRequest,
   ApprovalResponse,
 } from './executors/human';
+export { MCPNodeExecutor } from './executors/mcp';
+export type { MCPNodeConfig } from './executors/mcp';
 
 // Validators
 export { DAGValidator, DAGValidationError } from './validators/dag';
@@ -28,6 +30,8 @@ export type {
 } from './types';
 
 // Utility functions
+import type { WorkflowContext, SerializedContext } from './types';
+
 export function serializeContext(context: WorkflowContext): SerializedContext {
   return {
     runId: context.runId,

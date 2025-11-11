@@ -27,7 +27,7 @@ export class ToolNodeExecutor extends NodeExecutor {
     node: WorkflowNode,
     context: WorkflowContext
   ): Promise<NodeExecutionResult> {
-    const config = node.config as ToolNodeConfig;
+    const config = node.config as unknown as ToolNodeConfig;
 
     if (!config.command) {
       return {
@@ -70,20 +70,20 @@ export class ToolNodeExecutor extends NodeExecutor {
 
         const result = await response.json();
 
-        if (result.exitCode !== 0) {
+        if (((result as any).exitCode) !== 0) {
           logger.warn(
-            { nodeId: node.id, exitCode: result.exitCode },
+            { nodeId: node.id, exitCode: ((result as any).exitCode) },
             'Tool execution completed with non-zero exit code'
           );
         }
 
-        logger.info({ nodeId: node.id, exitCode: result.exitCode }, 'Tool node completed');
+        logger.info({ nodeId: node.id, exitCode: ((result as any).exitCode) }, 'Tool node completed');
 
         return {
           output: result,
           metadata: {
-            exitCode: result.exitCode,
-            duration: result.duration,
+            exitCode: ((result as any).exitCode),
+            duration: (result as any).duration,
           },
         };
       } catch (error) {
@@ -93,34 +93,4 @@ export class ToolNodeExecutor extends NodeExecutor {
     }, 2, node.id); // Tools get fewer retries than LLM calls
   }
 
-  private resolveValue(value: string, context: WorkflowContext): string {
-    return value.replace(/\$\{([^}]+)\}/g, (match, path) => {
-      const parts = path.split('.');
-
-      if (parts[0] === 'outputs' && parts.length >= 2) {
-        const nodeId = parts[1];
-        const output = context.outputs.get(nodeId);
-
-        if (!output) return match;
-
-        let result: any = output;
-        for (let i = 2; i < parts.length; i++) {
-          if (result && typeof result === 'object') {
-            result = result[parts[i]];
-          } else {
-            return match;
-          }
-        }
-
-        return result !== undefined ? String(result) : match;
-      }
-
-      if (parts[0] === 'variables' && parts.length === 2) {
-        const value = context.variables[parts[1]];
-        return value !== undefined ? String(value) : match;
-      }
-
-      return match;
-    });
-  }
 }
