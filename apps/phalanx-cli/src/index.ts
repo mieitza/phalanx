@@ -8,6 +8,7 @@ import { createWorkflowCommand } from './commands/workflow.js';
 import { createRunCommand } from './commands/run.js';
 import { createMCPCommand } from './commands/mcp.js';
 import { createConfigCommand } from './commands/config.js';
+import { createTUICommand } from './commands/tui.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -28,6 +29,7 @@ program.addCommand(createWorkflowCommand());
 program.addCommand(createRunCommand());
 program.addCommand(createMCPCommand());
 program.addCommand(createConfigCommand());
+program.addCommand(createTUICommand());
 
 // Add global error handler
 process.on('unhandledRejection', (reason: any) => {

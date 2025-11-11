@@ -22,11 +22,16 @@
     "cli-table3": "^0.6.3",
     "inquirer": "^9.2.12",
     "dayjs": "^1.11.10",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "blessed": "^0.1.81",
+    "blessed-contrib": "^4.11.0",
+    "eventsource": "^2.0.2"
   },
   "devDependencies": {
     "@types/inquirer": "^9.0.7",
     "@types/node": "^20.10.6",
+    "@types/blessed": "^0.1.25",
+    "@types/eventsource": "^1.1.15",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }
