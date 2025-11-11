@@ -6,7 +6,7 @@ import fastifyRateLimit from '@fastify/rate-limit';
 import { createLogger } from '@phalanx/shared';
 import { authPlugin } from './plugins/auth';
 import { metricsPlugin } from './plugins/metrics';
-import { errorHandlerPlugin } from './plugins/error-handler';
+import errorHandlerPlugin from './plugins/error-handler';
 import { healthRoutes } from './routes/health';
 import { workflowRoutes } from './routes/workflows';
 import { toolRoutes } from './routes/tools';
