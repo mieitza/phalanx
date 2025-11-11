@@ -10,6 +10,7 @@ import { DAGValidator } from '../validators/dag';
 import { NodeExecutor } from '../executors/base';
 import { LLMNodeExecutor } from '../executors/llm';
 import { ToolNodeExecutor } from '../executors/tool';
+import { HumanNodeExecutor } from '../executors/human';
 import { createLogger } from '@phalanx/shared';
 
 const logger = createLogger({ name: 'workflow-executor' });
@@ -22,6 +23,7 @@ export class WorkflowExecutor extends EventEmitter<{
   private completedNodes: Set<string> = new Set();
   private failedNodes: Set<string> = new Set();
   private cancelRequested = false;
+  private humanExecutor: HumanNodeExecutor;
 
   constructor(private config: WorkflowEngineConfig = {}) {
     super();
@@ -29,6 +31,10 @@ export class WorkflowExecutor extends EventEmitter<{
     // Register default node executors
     this.registerExecutor(new LLMNodeExecutor());
     this.registerExecutor(new ToolNodeExecutor());
+
+    // Human executor is special - we keep a reference for approval handling
+    this.humanExecutor = new HumanNodeExecutor();
+    this.registerExecutor(this.humanExecutor);
   }
 
   registerExecutor(executor: NodeExecutor): void {
@@ -145,6 +151,17 @@ export class WorkflowExecutor extends EventEmitter<{
       timestamp: new Date(),
     });
 
+    // Emit waiting_approval event for human nodes
+    if (node.type === 'human') {
+      this.emitEvent({
+        type: 'waiting_approval',
+        runId: context.runId,
+        nodeId: node.id,
+        timestamp: new Date(),
+        data: node.config,
+      });
+    }
+
     logger.info({ nodeId: node.id, type: node.type }, 'Executing node');
 
     try {
@@ -185,8 +202,47 @@ export class WorkflowExecutor extends EventEmitter<{
     }
   }
 
+  /**
+   * Approve a pending human-in-the-loop node
+   */
+  approve(runId: string, nodeId: string, approver: string, comment?: string): boolean {
+    return this.humanExecutor.approve(runId, nodeId, approver, comment);
+  }
+
+  /**
+   * Reject a pending human-in-the-loop node
+   */
+  reject(runId: string, nodeId: string, approver: string, comment?: string): boolean {
+    return this.humanExecutor.reject(runId, nodeId, approver, comment);
+  }
+
+  /**
+   * Get all pending approval requests
+   */
+  getPendingApprovals(): string[] {
+    return this.humanExecutor.getPendingApprovals();
+  }
+
+  /**
+   * Check if a specific approval is pending
+   */
+  isApprovalPending(runId: string, nodeId: string): boolean {
+    return this.humanExecutor.isPending(runId, nodeId);
+  }
+
+  /**
+   * Cancel workflow execution
+   */
   cancel(): void {
     this.cancelRequested = true;
+
+    // Cancel all pending approvals
+    const pending = this.humanExecutor.getPendingApprovals();
+    for (const key of pending) {
+      const [runId, nodeId] = key.split(':');
+      this.humanExecutor.cancel(runId, nodeId);
+    }
+
     logger.info('Workflow cancellation requested');
   }
 

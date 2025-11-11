@@ -5,6 +5,12 @@ export { WorkflowExecutor } from './engine/executor';
 export { NodeExecutor } from './executors/base';
 export { LLMNodeExecutor } from './executors/llm';
 export { ToolNodeExecutor } from './executors/tool';
+export { HumanNodeExecutor } from './executors/human';
+export type {
+  HumanNodeConfig,
+  ApprovalRequest,
+  ApprovalResponse,
+} from './executors/human';
 
 // Validators
 export { DAGValidator, DAGValidationError } from './validators/dag';
