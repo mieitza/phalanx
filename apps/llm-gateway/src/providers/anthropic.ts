@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import type { MessageParam } from '@anthropic-ai/sdk/resources/messages';
 import { CompletionRequest, CompletionResponse, Message } from '@phalanx/schemas';
 import { LLMProvider, StreamChunk, ProviderCapabilities } from './base';
 import { LLMProviderError } from '@phalanx/shared';
@@ -23,15 +24,17 @@ export class AnthropicProvider extends LLMProvider {
     try {
       const { system, messages } = this.formatMessages(request.messages);
 
-      const response = await this.client.messages.create({
+      const params: any = {
         model: request.model,
         system,
         messages,
-        tools: this.formatTools(request.tools),
+        ...(request.tools ? { tools: this.formatTools(request.tools) } : {}),
         temperature: request.temperature,
         max_tokens: request.maxTokens || 4096,
         stream: false,
-      });
+      };
+
+      const response = await this.client.messages.create(params);
 
       return this.parseResponse(response);
     } catch (error: any) {
@@ -46,15 +49,17 @@ export class AnthropicProvider extends LLMProvider {
     try {
       const { system, messages } = this.formatMessages(request.messages);
 
-      const stream = await this.client.messages.create({
+      const params: any = {
         model: request.model,
         system,
         messages,
-        tools: this.formatTools(request.tools),
+        ...(request.tools ? { tools: this.formatTools(request.tools) } : {}),
         temperature: request.temperature,
         max_tokens: request.maxTokens || 4096,
         stream: true,
-      });
+      };
+
+      const stream = await this.client.messages.create(params) as any;
 
       for await (const event of stream) {
         if (event.type === 'content_block_delta') {
@@ -67,13 +72,14 @@ export class AnthropicProvider extends LLMProvider {
         }
 
         if (event.type === 'content_block_start') {
-          if (event.content_block.type === 'tool_use') {
+          const block = event.content_block as any;
+          if (block.type === 'tool_use') {
             yield {
               type: 'tool_call',
               toolCall: {
-                id: event.content_block.id,
-                name: event.content_block.name,
-                arguments: JSON.stringify(event.content_block.input),
+                id: block.id,
+                name: block.name,
+                arguments: JSON.stringify(block.input),
               },
             };
           }
@@ -104,42 +110,42 @@ export class AnthropicProvider extends LLMProvider {
     ];
   }
 
-  protected formatMessages(messages: Message[]) {
+  protected formatMessages(messages: Message[]): { system: string; messages: MessageParam[] } {
     const systemMessages = messages.filter((m) => m.role === 'system');
     const otherMessages = messages.filter((m) => m.role !== 'system');
 
     const system = systemMessages.map((m) => m.content).join('\n\n');
 
-    const formattedMessages = otherMessages.map((msg) => {
+    const formattedMessages: MessageParam[] = otherMessages.map((msg): MessageParam => {
       if (msg.role === 'assistant' && msg.toolCalls) {
         return {
           role: 'assistant',
           content: msg.toolCalls.map((tc) => ({
-            type: 'tool_use' as const,
+            type: 'tool_use',
             id: tc.id,
             name: tc.function.name,
             input: JSON.parse(tc.function.arguments),
           })),
-        };
+        } as any;
       }
 
       if (msg.role === 'tool') {
         return {
-          role: 'user' as const,
+          role: 'user',
           content: [
             {
-              type: 'tool_result' as const,
+              type: 'tool_result',
               tool_use_id: msg.toolCallId,
               content: msg.content,
             },
           ],
-        };
+        } as any;
       }
 
       return {
-        role: msg.role === 'user' ? ('user' as const) : ('assistant' as const),
+        role: msg.role === 'user' ? 'user' : 'assistant',
         content: msg.content,
-      };
+      } as MessageParam;
     });
 
     return { system, messages: formattedMessages };

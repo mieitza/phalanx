@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { CompletionRequest, CompletionResponse, Message } from '@phalanx/schemas';
 import { LLMProvider, StreamChunk, ProviderCapabilities } from './base';
 import { LLMProviderError } from '@phalanx/shared';
@@ -104,14 +105,38 @@ export class OpenAIProvider extends LLMProvider {
       }));
   }
 
-  protected formatMessages(messages: Message[]) {
-    return messages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-      name: msg.name,
-      tool_calls: msg.toolCalls,
-      tool_call_id: msg.toolCallId,
-    }));
+  protected formatMessages(messages: Message[]): ChatCompletionMessageParam[] {
+    return messages.map((msg): ChatCompletionMessageParam => {
+      if (msg.role === 'system') {
+        return {
+          role: 'system',
+          content: msg.content,
+        };
+      }
+
+      if (msg.role === 'user') {
+        return {
+          role: 'user',
+          content: msg.content,
+          name: msg.name,
+        };
+      }
+
+      if (msg.role === 'assistant') {
+        return {
+          role: 'assistant',
+          content: msg.content,
+          tool_calls: msg.toolCalls,
+        };
+      }
+
+      // msg.role === 'tool'
+      return {
+        role: 'tool',
+        content: msg.content,
+        tool_call_id: msg.toolCallId || '',
+      };
+    });
   }
 
   protected parseResponse(response: any): CompletionResponse {
