@@ -77,6 +77,7 @@ const metricsPlugin: FastifyPluginAsync = async (server) => {
   });
 };
 
+export { metricsPlugin };
 export default fp(metricsPlugin, {
   name: 'metrics',
 });

@@ -10,7 +10,7 @@ import {
 } from '@phalanx/workflow-engine';
 import { createDatabase, DatabaseInstance, schema } from '@phalanx/database';
 import { createLogger } from '@phalanx/shared';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, inArray } from 'drizzle-orm';
 
 const logger = createLogger({ name: 'workflow-manager' });
 
@@ -361,7 +361,7 @@ export class WorkflowManager {
         .select()
         .from(schema.runs)
         .where(
-          schema.runs.status.in(['running', 'waiting'])
+          inArray(schema.runs.status, ['running', 'waiting'])
         );
 
       if (interruptedRuns.length === 0) {
